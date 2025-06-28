@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fruit Catch Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #d0f4f7, #a1e3c2);
+      overflow: hidden;
+    }
+    #gameArea {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    #startScreen, #gameOverScreen {
+      position: absolute;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      display: flex; flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    #startScreen h1 { font-size: 3em; margin-bottom: 20px; }
+    .level-btn, .skin-btn {
+      padding: 10px 30px; margin: 10px;
+      font-size: 20px; border: none;
+      border-radius: 10px;
+      background-color: #ffa500;
+      color: white; cursor: pointer;
+      transition: 0.3s;
+    }
+    .skin-btn { background-color: #5a9; }
+    #bucket {
+      width: 100px; height: 60px;
+      background: #8b4513;
+      position: absolute; bottom: 10px; left: 50%;
+      transform: translateX(-50%);
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    .goldSkin {
+      background: linear-gradient(to right, gold, orange);
+    }
+    .item {
+      width: 40px; height: 40px;
+      position: absolute; top: 0;
+      border-radius: 50%;
+      text-align: center; line-height: 40px;
+      font-size: 24px;
+    }
+    .fruit { background: radial-gradient(circle, #ffe066, #ff6f61); color: #fff; }
+    .bomb { background: radial-gradient(circle, #333, #000); color: red; }
+    #scoreBoard {
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 18px; font-weight: bold;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    #pauseBtn {
+      position: absolute; top: 10px; right: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #f44336;
+      color: white; border: none;
+      border-radius: 8px; cursor: pointer;
+    }
+    #gameOverScreen {
+      display: none; z-index: 1000;
+    }
+    #gameOverScreen button {
+      padding: 10px 30px;
+      font-size: 18px; margin: 10px;
+      border: none; border-radius: 8px; cursor: pointer;
+    }
+    #gameOverScreen .replay-btn { background: #28a745; color: white; }
+    #gameOverScreen .home-btn { background: #007bff; color: white; }
+    #metrics {
+      position: absolute; bottom: 10px; left: 10px;
+      background: rgba(255,255,255,0.5);
+      font-size: 14px; padding: 5px 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+<div id="gameArea">
+  <div id="startScreen">
+    <h1>🍓 Fruit Catcher</h1>
+    <p>Select Level to Start</p>
+    <button class="level-btn" onclick="startGame('easy')">Easy</button>
+    <button class="level-btn" onclick="startGame('medium')">Medium</button>
+    <button class="level-btn" onclick="startGame('hard')">Hard</button>
+    <p>Choose Bucket Skin</p>
+    <button class="skin-btn" onclick="selectSkin('default')">Default</button>
+    <button class="skin-btn" onclick="selectSkin('gold')" id="goldSkin" disabled>Gold (Unlock 200+)</button>
+  </div>
+  <div id="scoreBoard">Score: 0 | Highscore: 0</div>
+  <button id="pauseBtn" onclick="togglePause()">⏸️ Pause</button>
+  <div id="bucket"></div>
+  <div id="metrics"></div>
+  <div id="gameOverScreen">
+    <h1>💥 Game Over</h1>
+    <p id="finalScore">Your Score: 0</p>
+    <p id="finalHighscore">Highscore: 0</p>
+    <button class="replay-btn" onclick="restartGame()">🔁 Replay</button>
+    <button class="home-btn" onclick="goToHome()">🏠 Home</button>
+  </div>
+</div>
+<script>
+let score = 0, highscore = 0, bucketX = window.innerWidth/2 - 50;
+let fallSpeed = 5, dropInterval = 1000, dropTimer;
+let fruits = ["🍎", "🍌", "🍇", "🍓", "🍍", "🥝"];
+let paused = false, selectedSkin = 'default';
+let totalFruitsCaught = 0, totalBombHits = 0, totalPlays = 0, bestCombo = 0, currentCombo = 0;
+let successCount = 0, failCount = 0, totalDrops = 0;
+const bucket = document.getElementById("bucket");
+const scoreBoard = document.getElementById("scoreBoard");
+const startScreen = document.getElementById("startScreen");
+const gameOverScreen = document.getElementById("gameOverScreen");
+const finalScore = document.getElementById("finalScore");
+const finalHighscore = document.getElementById("finalHighscore");
+const metrics = document.getElementById("metrics");
+const pauseBtn = document.getElementById("pauseBtn");
+const goldSkinBtn = document.getElementById("goldSkin");
+
+function selectSkin(skin) {
+  selectedSkin = skin;
+  if (skin === 'gold') bucket.classList.add('goldSkin');
+  else bucket.classList.remove('goldSkin');
+}
+
+function startGame(level) {
+  score = 0; totalPlays++;
+  successCount = failCount = totalDrops = bestCombo = currentCombo = 0;
+  scoreBoard.textContent = `Score: ${score} | Highscore: ${highscore}`;
+  startScreen.style.display = "none";
+  gameOverScreen.style.display = "none";
+  fallSpeed = (level === 'easy') ? 4 : (level === 'medium') ? 6 : 8;
+  dropInterval = (level === 'easy') ? 1500 : (level === 'medium') ? 1000 : 700;
+  dropTimer = setInterval(dropItem, dropInterval);
+  paused = false;
+  pauseBtn.innerText = "⏸️ Pause";
+}
+
+function dropItem() {
+  if (paused) return;
+  const item = document.createElement("div");
+  const isBomb = Math.random() < 0.2;
+  item.className = `item ${isBomb ? 'bomb' : 'fruit'}`;
+  item.textContent = isBomb ? "💣" : fruits[Math.floor(Math.random()*fruits.length)];
+  item.style.left = Math.random() * (window.innerWidth - 40) + "px";
+  gameArea.appendChild(item);
+  let y = 0;
+  const fall = setInterval(() => {
+    if (paused) return;
+    y += fallSpeed;
+    item.style.top = y + "px";
+    const ir = item.getBoundingClientRect();
+    const br = bucket.getBoundingClientRect();
+    if (ir.bottom >= br.top && ir.left < br.right && ir.right > br.left) {
+      clearInterval(fall);
+      gameArea.removeChild(item);
+      if (isBomb) {
+        clearInterval(dropTimer);
+        highscore = Math.max(highscore, score);
+        finalScore.textContent = `Your Score: ${score}`;
+        finalHighscore.textContent = `Highscore: ${highscore}`;
+        gameOverScreen.style.display = "flex";
+        totalBombHits++;
+        currentCombo = 0;
+        updateMetrics();
+        return;
+      } else {
+        score += 10;
+        totalFruitsCaught++;
+        successCount++;
+        currentCombo++;
+        bestCombo = Math.max(bestCombo, currentCombo);
+      }
+      scoreBoard.textContent = `Score: ${score} | Highscore: ${highscore}`;
+      if (score >= 200) goldSkinBtn.disabled = false;
+      totalDrops++;
+      if (totalDrops % 5 === 0) adjustDifficulty();
+      updateMetrics();
+    } else if (y > window.innerHeight) {
+      clearInterval(fall);
+      gameArea.removeChild(item);
+      if (!isBomb) {
+        failCount++;
+        totalDrops++;
+        currentCombo = 0;
+        if (totalDrops % 5 === 0) adjustDifficulty();
+        updateMetrics();
+      }
+    }
+  }, 20);
+}
+
+function adjustDifficulty() {
+  let ratio = successCount / (successCount + failCount);
+  if (ratio > 0.8 && fallSpeed < 15) fallSpeed++;
+  else if (ratio < 0.5 && fallSpeed > 4) fallSpeed--;
+  successCount = failCount = 0;
+}
+
+function restartGame() {
+  clearInterval(dropTimer);
+  startGame('medium');
+}
+
+function goToHome() {
+  clearInterval(dropTimer);
+  gameOverScreen.style.display = "none";
+  startScreen.style.display = "flex";
+  score = 0;
+  scoreBoard.textContent = `Score: ${score} | Highscore: ${highscore}`;
+  updateMetrics();
+}
+
+function togglePause() {
+  paused = !paused;
+  pauseBtn.innerText = paused ? "▶️ Resume" : "⏸️ Pause";
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") bucketX -= 30;
+  if (e.key === "ArrowRight") bucketX += 30;
+  updateBucket();
+});
+
+bucket.addEventListener("mousedown", () => isDragging = true);
+document.addEventListener("mouseup", () => isDragging = false);
+document.addEventListener("mousemove", e => {
+  if (isDragging) {
+    bucketX = e.clientX - 50;
+    updateBucket();
+  }
+});
+bucket.addEventListener("touchstart", e => { isDragging = true; e.preventDefault(); });
+document.addEventListener("touchend", () => isDragging = false);
+document.addEventListener("touchmove", e => {
+  if (isDragging) {
+    bucketX = e.touches[0].clientX - 50;
+    updateBucket();
+  }
+});
+
+function updateBucket() {
+  bucketX = Math.max(0, Math.min(bucketX, window.innerWidth - 100));
+  bucket.style.left = bucketX + "px";
+}
+
+function updateMetrics() {
+  const avg = totalPlays > 0 ? Math.round(score / totalPlays) : 0;
+  metrics.innerHTML = `
+    Total Fruits Caught: ${totalFruitsCaught}<br>
+    Total Bomb Hits: ${totalBombHits}<br>
+    Avg Score: ${avg}<br>
+    Best Combo: ${bestCombo}
+  `;
+}
+</script>
+</body>
+</html>
