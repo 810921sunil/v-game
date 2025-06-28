@@ -3,12 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <title>Fruit Catch Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
+    html, body {
+      width: 100%;
+      height: 100%;
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to bottom, #d0f4f7, #a1e3c2);
       overflow: hidden;
+      font-size: clamp(14px, 2vw, 20px);
+      touch-action: none;
     }
     #gameArea {
       position: relative;
@@ -21,14 +26,14 @@
       background: rgba(0, 0, 0, 0.6);
       color: white;
       display: flex; flex-direction: column;
-      justify-content: center;
-      align-items: center;
+      justify-content: center; align-items: center;
       z-index: 100;
+      text-align: center;
     }
-    #startScreen h1 { font-size: 3em; margin-bottom: 20px; }
+    #startScreen h1 { font-size: 3em; margin-bottom: 1em; }
     .level-btn, .skin-btn {
-      padding: 10px 30px; margin: 10px;
-      font-size: 20px; border: none;
+      padding: 2vw 5vw; margin: 1vw;
+      font-size: 1em; border: none;
       border-radius: 10px;
       background-color: #ffa500;
       color: white; cursor: pointer;
@@ -36,9 +41,11 @@
     }
     .skin-btn { background-color: #5a9; }
     #bucket {
-      width: 100px; height: 60px;
+      width: 20vw;
+      height: 8vh;
+      min-width: 80px; min-height: 50px;
       background: #8b4513;
-      position: absolute; bottom: 10px; left: 50%;
+      position: absolute; bottom: 2vh; left: 50%;
       transform: translateX(-50%);
       border-radius: 0 0 20px 20px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
@@ -47,44 +54,47 @@
       background: linear-gradient(to right, gold, orange);
     }
     .item {
-      width: 40px; height: 40px;
+      width: 8vw;
+      height: 8vw;
+      font-size: 6vw;
+      min-width: 40px;
+      min-height: 40px;
+      line-height: 8vw;
       position: absolute; top: 0;
       border-radius: 50%;
-      text-align: center; line-height: 40px;
-      font-size: 24px;
+      text-align: center;
     }
     .fruit { background: radial-gradient(circle, #ffe066, #ff6f61); color: #fff; }
     .bomb { background: radial-gradient(circle, #333, #000); color: red; }
     #scoreBoard {
-      position: absolute; top: 10px; left: 10px;
+      position: absolute; top: 1vh; left: 2vw;
       background: rgba(255, 255, 255, 0.6);
-      padding: 10px 20px;
+      padding: 1vh 2vw;
       border-radius: 10px;
-      font-size: 18px; font-weight: bold;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      font-weight: bold;
     }
     #pauseBtn {
-      position: absolute; top: 10px; right: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
+      position: absolute; top: 1vh; right: 2vw;
+      padding: 1vh 2vw;
       background: #f44336;
       color: white; border: none;
       border-radius: 8px; cursor: pointer;
+      font-size: 1em;
     }
     #gameOverScreen {
       display: none; z-index: 1000;
     }
     #gameOverScreen button {
-      padding: 10px 30px;
-      font-size: 18px; margin: 10px;
+      padding: 1vh 3vw;
+      font-size: 1em; margin: 1vh;
       border: none; border-radius: 8px; cursor: pointer;
     }
     #gameOverScreen .replay-btn { background: #28a745; color: white; }
     #gameOverScreen .home-btn { background: #007bff; color: white; }
     #metrics {
-      position: absolute; bottom: 10px; left: 10px;
+      position: absolute; bottom: 1vh; left: 2vw;
       background: rgba(255,255,255,0.5);
-      font-size: 14px; padding: 5px 10px;
+      font-size: 0.8em; padding: 0.5vh 1vw;
       border-radius: 8px;
     }
   </style>
@@ -113,6 +123,7 @@
     <button class="home-btn" onclick="goToHome()">🏠 Home</button>
   </div>
 </div>
+
 <script>
 let score = 0, highscore = 0, bucketX = window.innerWidth/2 - 50;
 let fallSpeed = 5, dropInterval = 1000, dropTimer;
@@ -229,31 +240,28 @@ function togglePause() {
   pauseBtn.innerText = paused ? "▶️ Resume" : "⏸️ Pause";
 }
 
-document.addEventListener("keydown", e => {
-  if (e.key === "ArrowLeft") bucketX -= 30;
-  if (e.key === "ArrowRight") bucketX += 30;
-  updateBucket();
-});
+let isMobile = /Android|iPhone|iPad|Touch/.test(navigator.userAgent);
+let isDragging = false;
 
-bucket.addEventListener("mousedown", () => isDragging = true);
-document.addEventListener("mouseup", () => isDragging = false);
-document.addEventListener("mousemove", e => {
-  if (isDragging) {
-    bucketX = e.clientX - 50;
+if (!isMobile) {
+  document.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") bucketX -= 30;
+    if (e.key === "ArrowRight") bucketX += 30;
     updateBucket();
-  }
-});
-bucket.addEventListener("touchstart", e => { isDragging = true; e.preventDefault(); });
-document.addEventListener("touchend", () => isDragging = false);
-document.addEventListener("touchmove", e => {
-  if (isDragging) {
-    bucketX = e.touches[0].clientX - 50;
-    updateBucket();
-  }
-});
+  });
+} else {
+  bucket.addEventListener("touchstart", e => { isDragging = true; e.preventDefault(); });
+  document.addEventListener("touchend", () => isDragging = false);
+  document.addEventListener("touchmove", e => {
+    if (isDragging) {
+      bucketX = e.touches[0].clientX - bucket.offsetWidth / 2;
+      updateBucket();
+    }
+  });
+}
 
 function updateBucket() {
-  bucketX = Math.max(0, Math.min(bucketX, window.innerWidth - 100));
+  bucketX = Math.max(0, Math.min(bucketX, window.innerWidth - bucket.offsetWidth));
   bucket.style.left = bucketX + "px";
 }
 
