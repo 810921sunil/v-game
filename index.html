@@ -12,7 +12,7 @@
     }
     html, body {
       width: 100vw;
-      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to bottom, #d0f4f7, #a1e3c2);
@@ -22,8 +22,8 @@
     #gameArea {
       position: relative;
       width: 100vw;
-      height: 100vh;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      height: 100dvh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 20px) env(safe-area-inset-left);
     }
     #startScreen, #gameOverScreen {
       position: absolute;
@@ -63,11 +63,12 @@
       min-height: 50px;
       background: #8b4513;
       position: absolute;
-      bottom: 2vh;
+      bottom: 4vh;
       left: 50%;
       transform: translateX(-50%);
       border-radius: 0 0 20px 20px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      margin-bottom: 10px;
     }
     .goldSkin {
       background: linear-gradient(to right, gold, orange);
@@ -168,8 +169,8 @@
     <button class="home-btn" onclick="goToHome()">🏠 Home</button>
   </div>
 </div>
-
 <script>
+// Game JavaScript logic starts here
 let score = 0, highscore = 0, bucketX = window.innerWidth / 2 - 50;
 let fallSpeed = 5, dropInterval = 1000, dropTimer;
 let fruits = ["🍎", "🍌", "🍇", "🍓", "🍍", "🥝"];
@@ -185,6 +186,7 @@ const finalHighscore = document.getElementById("finalHighscore");
 const metrics = document.getElementById("metrics");
 const pauseBtn = document.getElementById("pauseBtn");
 const goldSkinBtn = document.getElementById("goldSkin");
+let isDragging = false;
 
 function selectSkin(skin) {
   selectedSkin = skin;
@@ -285,25 +287,29 @@ function togglePause() {
   pauseBtn.innerText = paused ? "▶️ Resume" : "⏸️ Pause";
 }
 
-let isMobile = /Android|iPhone|iPad|Touch/.test(navigator.userAgent);
-let isDragging = false;
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") bucketX -= 30;
+  if (e.key === "ArrowRight") bucketX += 30;
+  updateBucket();
+});
 
-if (!isMobile) {
-  document.addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft") bucketX -= 30;
-    if (e.key === "ArrowRight") bucketX += 30;
+bucket.addEventListener("mousedown", () => isDragging = true);
+document.addEventListener("mouseup", () => isDragging = false);
+document.addEventListener("mousemove", e => {
+  if (isDragging) {
+    bucketX = e.clientX - 50;
     updateBucket();
-  });
-} else {
-  bucket.addEventListener("touchstart", e => { isDragging = true; e.preventDefault(); });
-  document.addEventListener("touchend", () => isDragging = false);
-  document.addEventListener("touchmove", e => {
-    if (isDragging) {
-      bucketX = e.touches[0].clientX - bucket.offsetWidth / 2;
-      updateBucket();
-    }
-  });
-}
+  }
+});
+
+bucket.addEventListener("touchstart", e => { isDragging = true; e.preventDefault(); });
+document.addEventListener("touchend", () => isDragging = false);
+document.addEventListener("touchmove", e => {
+  if (isDragging) {
+    bucketX = e.touches[0].clientX - 50;
+    updateBucket();
+  }
+});
 
 function updateBucket() {
   bucketX = Math.max(0, Math.min(bucketX, window.innerWidth - bucket.offsetWidth));
@@ -319,6 +325,7 @@ function updateMetrics() {
     Best Combo: ${bestCombo}
   `;
 }
+// Game JavaScript logic ends here
 </script>
 </body>
 </html>
