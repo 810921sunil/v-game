@@ -5,50 +5,69 @@
   <title>Fruit Catch Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     html, body {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to bottom, #d0f4f7, #a1e3c2);
-      overflow: hidden;
-      font-size: clamp(14px, 2vw, 20px);
       touch-action: none;
+      font-size: clamp(14px, 2vw, 20px);
     }
     #gameArea {
       position: relative;
       width: 100vw;
       height: 100vh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
     #startScreen, #gameOverScreen {
       position: absolute;
-      width: 100%; height: 100%;
+      width: 100%;
+      height: 100%;
       background: rgba(0, 0, 0, 0.6);
       color: white;
-      display: flex; flex-direction: column;
-      justify-content: center; align-items: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       z-index: 100;
       text-align: center;
     }
-    #startScreen h1 { font-size: 3em; margin-bottom: 1em; }
+    #startScreen h1 {
+      font-size: 3em;
+      margin-bottom: 1em;
+    }
     .level-btn, .skin-btn {
-      padding: 2vw 5vw; margin: 1vw;
-      font-size: 1em; border: none;
+      padding: 2vw 5vw;
+      margin: 1vw;
+      font-size: 1em;
+      border: none;
       border-radius: 10px;
       background-color: #ffa500;
-      color: white; cursor: pointer;
+      color: white;
+      cursor: pointer;
       transition: 0.3s;
     }
-    .skin-btn { background-color: #5a9; }
+    .skin-btn {
+      background-color: #5a9;
+    }
     #bucket {
       width: 20vw;
       height: 8vh;
-      min-width: 80px; min-height: 50px;
+      min-width: 80px;
+      min-height: 50px;
       background: #8b4513;
-      position: absolute; bottom: 2vh; left: 50%;
+      position: absolute;
+      bottom: 2vh;
+      left: 50%;
       transform: translateX(-50%);
       border-radius: 0 0 20px 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     }
     .goldSkin {
       background: linear-gradient(to right, gold, orange);
@@ -56,45 +75,71 @@
     .item {
       width: 8vw;
       height: 8vw;
-      font-size: 6vw;
       min-width: 40px;
       min-height: 40px;
+      font-size: 6vw;
       line-height: 8vw;
-      position: absolute; top: 0;
+      position: absolute;
+      top: 0;
       border-radius: 50%;
       text-align: center;
     }
-    .fruit { background: radial-gradient(circle, #ffe066, #ff6f61); color: #fff; }
-    .bomb { background: radial-gradient(circle, #333, #000); color: red; }
+    .fruit {
+      background: radial-gradient(circle, #ffe066, #ff6f61);
+      color: white;
+    }
+    .bomb {
+      background: radial-gradient(circle, #333, #000);
+      color: red;
+    }
     #scoreBoard {
-      position: absolute; top: 1vh; left: 2vw;
+      position: absolute;
+      top: 1vh;
+      left: 2vw;
       background: rgba(255, 255, 255, 0.6);
       padding: 1vh 2vw;
       border-radius: 10px;
       font-weight: bold;
     }
     #pauseBtn {
-      position: absolute; top: 1vh; right: 2vw;
+      position: absolute;
+      top: 1vh;
+      right: 2vw;
       padding: 1vh 2vw;
       background: #f44336;
-      color: white; border: none;
-      border-radius: 8px; cursor: pointer;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
       font-size: 1em;
     }
     #gameOverScreen {
-      display: none; z-index: 1000;
+      display: none;
+      z-index: 1000;
     }
     #gameOverScreen button {
       padding: 1vh 3vw;
-      font-size: 1em; margin: 1vh;
-      border: none; border-radius: 8px; cursor: pointer;
+      font-size: 1em;
+      margin: 1vh;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-    #gameOverScreen .replay-btn { background: #28a745; color: white; }
-    #gameOverScreen .home-btn { background: #007bff; color: white; }
+    #gameOverScreen .replay-btn {
+      background: #28a745;
+      color: white;
+    }
+    #gameOverScreen .home-btn {
+      background: #007bff;
+      color: white;
+    }
     #metrics {
-      position: absolute; bottom: 1vh; left: 2vw;
-      background: rgba(255,255,255,0.5);
-      font-size: 0.8em; padding: 0.5vh 1vw;
+      position: absolute;
+      bottom: 1vh;
+      left: 2vw;
+      background: rgba(255, 255, 255, 0.5);
+      font-size: 0.8em;
+      padding: 0.5vh 1vw;
       border-radius: 8px;
     }
   </style>
@@ -125,7 +170,7 @@
 </div>
 
 <script>
-let score = 0, highscore = 0, bucketX = window.innerWidth/2 - 50;
+let score = 0, highscore = 0, bucketX = window.innerWidth / 2 - 50;
 let fallSpeed = 5, dropInterval = 1000, dropTimer;
 let fruits = ["🍎", "🍌", "🍇", "🍓", "🍍", "🥝"];
 let paused = false, selectedSkin = 'default';
@@ -165,7 +210,7 @@ function dropItem() {
   const item = document.createElement("div");
   const isBomb = Math.random() < 0.2;
   item.className = `item ${isBomb ? 'bomb' : 'fruit'}`;
-  item.textContent = isBomb ? "💣" : fruits[Math.floor(Math.random()*fruits.length)];
+  item.textContent = isBomb ? "💣" : fruits[Math.floor(Math.random() * fruits.length)];
   item.style.left = Math.random() * (window.innerWidth - 40) + "px";
   gameArea.appendChild(item);
   let y = 0;
